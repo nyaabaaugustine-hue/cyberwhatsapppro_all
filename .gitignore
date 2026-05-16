@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+
+# Build output — never commit installers or compiled binaries
+electron_app/dist/
+electron_app/.cwp-userdata/
+*.exe
+*.dmg
+*.AppImage
+*.deb
+*.rpm
+*.snap
+*.msi
+*.pkg
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Next.js backend
+backend/.next/
+backend/node_modules/
+backend/.vercel/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
