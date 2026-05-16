@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cyber WhatsApp Pro</title>
+  <link rel="stylesheet" href="css/popup.css" />
+</head>
+<body>
+
+  <div class="popup-wrap">
+
+    <!-- ── Header ─────────────────────────────────────────── -->
+    <header class="header">
+      <div class="header-inner">
+        <div class="brand">
+          <img src="logo/pro-small.png" alt="CWP Logo" class="brand-logo" />
+          <div class="brand-text">
+            <span class="brand-name">Cyber WhatsApp Pro</span>
+            <span class="brand-sub">Premium Edition</span>
+          </div>
+        </div>
+        <div class="plan-badge" id="planBadge">FREE</div>
+      </div>
+    </header>
+
+    <!-- ── Status Card ────────────────────────────────────── -->
+    <!-- Always visible. Shows key hint + plan when premium.   -->
+    <!-- ▾ toggle in corner reveals Deactivate when premium.  -->
+    <section class="status-card" id="statusCard">
+      <div class="status-icon" id="statusIcon">🔒</div>
+      <div class="status-info">
+        <p class="status-label">Current Plan</p>
+        <p class="status-plan" id="statusPlan">Free Plan</p>
+        <p class="status-detail" id="statusDetail">Enter your key to unlock premium</p>
+      </div>
+      <button class="lic-toggle hidden" id="licToggle" title="Manage license">▾</button>
+    </section>
+
+    <!-- ── Activation Form ────────────────────────────────── -->
+    <!-- Hidden once a valid license is stored.               -->
+    <section class="activation-section" id="activationSection">
+      <label class="input-label" for="licenseInput">Activation Key</label>
+      <div class="input-row">
+        <input
+          type="text"
+          id="licenseInput"
+          class="license-input"
+          placeholder="XXXXX-XXXXX-XXXXX-XXXXX"
+          autocomplete="off"
+          spellcheck="false"
+          maxlength="23"
+        />
+      </div>
+      <button class="activate-btn" id="activateBtn">
+        <span class="btn-icon">⚡</span>
+        <span class="btn-text">Activate Premium</span>
+      </button>
+      <div class="message-box" id="messageBox" role="alert"></div>
+      <p class="help-text">
+        Pay via Mobile Money &amp; get your key via WhatsApp:<br/>
+        <a class="wa-link" href="https://wa.me/233541988383" target="_blank">+233 54 198 8383</a>
+      </p>
+    </section>
+
+    <!-- ── Premium Active Panel ───────────────────────────── -->
+    <!-- Shown when license is valid. Popup STAYS OPEN.       -->
+    <!-- User clicks the button to navigate to propup.html.   -->
+    <section class="premium-section hidden" id="premiumSection">
+
+      <div class="premium-features">
+        <div class="feature-item active"><span>✓</span> Bulk Messaging</div>
+        <div class="feature-item active"><span>✓</span> Auto Reply</div>
+        <div class="feature-item active"><span>✓</span> Scheduler</div>
+        <div class="feature-item active"><span>✓</span> Contact Extract</div>
+        <div class="feature-item active"><span>✓</span> Anti-Delete</div>
+        <div class="feature-item active"><span>✓</span> Group Tools</div>
+      </div>
+
+      <button class="open-wa-btn" id="openWaBtn">
+        <span>💬</span> Open WhatsApp Pro Panel
+      </button>
+      <p style="font-size:10px;color:var(--text-muted,#5a7090);text-align:center;margin:0;font-family:monospace;">Opens floating panel on WhatsApp Web</p>
+
+      <!-- Revealed by the ▾ toggle in the status card -->
+      <div id="deactivateWrap" class="hidden">
+        <button class="deactivate-btn" id="deactivateBtn">Deactivate License</button>
+      </div>
+
+    </section>
+
+    <!-- ── Footer ─────────────────────────────────────────── -->
+    <footer class="footer">
+      <span>Support: <a href="https://wa.me/233541988383" target="_blank">+233 54 198 8383</a></span>
+    </footer>
+
+  </div>
+
+  <script src="js/popup.js"></script>
+</body>
+</html>
