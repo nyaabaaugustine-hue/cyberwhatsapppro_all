@@ -381,11 +381,68 @@
 
   // ── WhatsApp actions ──────────────────────────────────────────────────────
   const wa = js => bridge.waExecute(js).catch(() => {});
-  $("btnFocusWa").addEventListener("click",   () => bridge.waSendToPage("focus", {}));
-  $("btnOpenPanel").addEventListener("click",  () => wa(`var b=document.getElementById('pro-panel-toggle');if(b)b.click();else window.dispatchEvent(new CustomEvent('cwp:openPanel'));`));
-  $("btnScheduler").addEventListener("click",  () => wa(`window.dispatchEvent(new CustomEvent('cwp:openTab',{detail:'scheduler'}));`));
-  $("btnAutoReply").addEventListener("click",  () => wa(`window.dispatchEvent(new CustomEvent('cwp:openTab',{detail:'autoreply'}));`));
-  $("btnContacts").addEventListener("click",   () => wa(`window.dispatchEvent(new CustomEvent('cwp:openTab',{detail:'contacts'}));`));
+
+  function btnFeedback(btn) {
+    btn.style.opacity = "0.55";
+    btn.style.transform = "scale(0.97)";
+    setTimeout(() => { btn.style.opacity = ""; btn.style.transform = ""; }, 180);
+  }
+
+  // Focus WhatsApp Window — uses focusMain IPC (actually brings the window forward)
+  $("btnFocusWa").addEventListener("click", function() {
+    btnFeedback(this);
+    bridge.focusMain().catch(() => {});
+  });
+
+  // Open Pro Sender Panel — fires the exact event procntt.js listens for
+  $("btnOpenPanel").addEventListener("click", function() {
+    btnFeedback(this);
+    bridge.focusMain().catch(() => {});
+    wa(`document.dispatchEvent(new CustomEvent('cwp_open_panel'));`);
+  });
+
+  // Open Scheduler — open panel then click Scheduler tab inside it
+  $("btnScheduler").addEventListener("click", function() {
+    btnFeedback(this);
+    bridge.focusMain().catch(() => {});
+    wa(`
+      (function(){
+        document.dispatchEvent(new CustomEvent('cwp_open_panel'));
+        // Give the panel 400ms to render, then click the Scheduler tab
+        setTimeout(function(){
+          var tabs = document.querySelectorAll('.cwp-tab, [data-tab], .pro-tab-btn');
+          tabs.forEach(function(t){
+            if (t.textContent && t.textContent.toLowerCase().includes('schedul')) t.click();
+          });
+        }, 400);
+      })();
+    `);
+  });
+
+  // Open Auto Reply — open panel then click Auto Reply tab
+  $("btnAutoReply").addEventListener("click", function() {
+    btnFeedback(this);
+    bridge.focusMain().catch(() => {});
+    wa(`
+      (function(){
+        document.dispatchEvent(new CustomEvent('cwp_open_panel'));
+        setTimeout(function(){
+          var tabs = document.querySelectorAll('.cwp-tab, [data-tab], .pro-tab-btn');
+          tabs.forEach(function(t){
+            if (t.textContent && t.textContent.toLowerCase().includes('auto') ||
+                t.textContent.toLowerCase().includes('reply')) t.click();
+          });
+        }, 400);
+      })();
+    `);
+  });
+
+  // Export Group Contacts — fire the PROS export event
+  $("btnContacts").addEventListener("click", function() {
+    btnFeedback(this);
+    bridge.focusMain().catch(() => {});
+    wa(`window.dispatchEvent(new CustomEvent('PROS::export-group', {detail: {groupId: null}}));`);
+  });
 
   ["supportLink","footerLink"].forEach(id =>
     $(id).addEventListener("click", e => { e.preventDefault(); bridge.openExternal(SUPPORT_WA); })

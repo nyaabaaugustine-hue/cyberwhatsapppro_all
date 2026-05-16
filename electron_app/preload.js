@@ -18,6 +18,12 @@ contextBridge.exposeInMainWorld("cwpBridge", {
   waExecute:    (code)             => ipcRenderer.invoke("wa:executeScript", code),
   waSendToPage: (channel, payload) => ipcRenderer.invoke("wa:sendToPage", channel, payload),
 
+  // Focus the main WhatsApp window
+  focusMain: () => ipcRenderer.invoke("focusMain"),
+
+  // Open / show the Pro Panel window
+  openPanel: () => ipcRenderer.invoke("openPanel"),
+
   // License verification (runs in main process — no CORS)
   verifyLicense: (licenseKey, deviceId) => ipcRenderer.invoke("verifyLicense", { licenseKey, deviceId }),
 

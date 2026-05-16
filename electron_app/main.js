@@ -108,13 +108,17 @@ function createMainWindow() {
   mainWindow.on("maximize",  sizeWaView);
   mainWindow.on("unmaximize", sizeWaView);
   mainWindow.on("close", e => { if (!isQuitting) { e.preventDefault(); mainWindow.hide(); } });
-  mainWindow.once("ready-to-show", () => { mainWindow.show(); openPanelWindow(); });
+  mainWindow.once("ready-to-show", () => {
+    mainWindow.show();
+    // Delay panel slightly so main window is fully settled first
+    setTimeout(openPanelWindow, 1200);
+  });
+
+  // Fallback: open panel if main window never fired ready-to-show
   setTimeout(() => {
-    if (mainWindow && !mainWindow.isVisible()) {
-      mainWindow.show();
-      openPanelWindow();
-    }
-  }, 3000);
+    if (mainWindow && !mainWindow.isVisible()) mainWindow.show();
+    if (!panelWindow || panelWindow.isDestroyed()) openPanelWindow();
+  }, 5000);
 }
 
 function sizeWaView() {
@@ -162,26 +166,6 @@ async function injectScriptTagAwaited(wc, cwpUrl) {
         window.addEventListener(${JSON.stringify(eventName)}, function(){ clearTimeout(t); resolve(); }, { once: true });
       });
     `, false);
-    console.log("[CWP] ✓ script-tag:", name);
-    return true;
-  } catch (e) {
-    console.warn("[CWP] script-tag failed:", name, "→", e.message);
-    return false;
-  }
-}
-
-async function injectScriptTag(wc, cwpUrl) {
-  const name = cwpUrl.split("/").pop();
-  try {
-    await wc.executeJavaScript(`
-      (function(){
-        var s = document.createElement('script');
-        s.src = ${JSON.stringify(cwpUrl)};
-        s.onerror = function(e){ console.error('[CWP] <script> load error: ${name}', e); };
-        (document.head || document.documentElement).appendChild(s);
-      })();
-    `, false);
-    await new Promise(r => setTimeout(r, 600));
     console.log("[CWP] ✓ script-tag:", name);
     return true;
   } catch (e) {
@@ -244,7 +228,14 @@ async function injectExtensionScripts() {
 
 // ── Pro Panel window ──────────────────────────────────────────────────────────
 function openPanelWindow() {
-  if (panelWindow && !panelWindow.isDestroyed()) { panelWindow.show(); panelWindow.focus(); return; }
+  // If already open, just bring it forward
+  if (panelWindow && !panelWindow.isDestroyed()) {
+    if (panelWindow.isMinimized()) panelWindow.restore();
+    panelWindow.show();
+    panelWindow.focus();
+    return;
+  }
+
   panelWindow = new BrowserWindow({
     width: 420, height: 840, minWidth: 380, minHeight: 600,
     title: "Cyber WhatsApp Pro – Panel",
@@ -254,12 +245,35 @@ function openPanelWindow() {
       nodeIntegration: false,
       contextIsolation: true,
     },
-    show: false,
+    show: false,                 // start hidden; we show after load
     backgroundColor: "#1f2c34",
+    alwaysOnTop: false,
   });
+
   panelWindow.loadFile(path.join(__dirname, "renderer", "panel.html"));
-  panelWindow.once("ready-to-show", () => panelWindow.show());
-  panelWindow.on("close", e => { if (!isQuitting) { e.preventDefault(); panelWindow.hide(); } });
+
+  // Show as soon as content is ready
+  panelWindow.once("ready-to-show", () => {
+    panelWindow.show();
+    panelWindow.focus();
+  });
+
+  // Fallback: force-show after 3 s in case ready-to-show never fires
+  const forceShow = setTimeout(() => {
+    if (panelWindow && !panelWindow.isDestroyed() && !panelWindow.isVisible()) {
+      panelWindow.show();
+      panelWindow.focus();
+    }
+  }, 3000);
+  panelWindow.once("show", () => clearTimeout(forceShow));
+
+  // Hide instead of close (keeps state)
+  panelWindow.on("close", e => {
+    if (!isQuitting) {
+      e.preventDefault();
+      panelWindow.hide();
+    }
+  });
 }
 
 // ── System Tray ───────────────────────────────────────────────────────────────
@@ -277,7 +291,23 @@ function createTray() {
 
 // ── IPC handlers ─────────────────────────────────────────────────────────────
 
-// License verification — runs in main process (Node.js), no CORS, no browser restrictions
+// Focus the main WhatsApp window
+ipcMain.handle("focusMain", () => {
+  if (mainWindow) {
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.show();
+    mainWindow.focus();
+  }
+  return true;
+});
+
+// Open (or show) the Pro Panel window
+ipcMain.handle("openPanel", () => {
+  openPanelWindow();
+  return true;
+});
+
+// License verification — runs in main process (Node.js), no CORS
 ipcMain.handle("verifyLicense", async (_, { licenseKey, deviceId }) => {
   console.log("[CWP] verifyLicense called for key:", licenseKey ? licenseKey.slice(0,8)+"..." : "none");
   try {
@@ -304,7 +334,6 @@ ipcMain.handle("verifyLicense", async (_, { licenseKey, deviceId }) => {
             const parsed = JSON.parse(data);
             resolve({ ok: true, status: res.statusCode, data: parsed });
           } catch {
-            // Not JSON — return raw text so panel can show it
             resolve({ ok: false, status: res.statusCode, error: "Server returned: " + data.slice(0, 100) });
           }
         });
@@ -313,15 +342,11 @@ ipcMain.handle("verifyLicense", async (_, { licenseKey, deviceId }) => {
         console.error("[CWP] License API network error:", e.message);
         resolve({ ok: false, error: e.message });
       });
-      req.setTimeout(20000, () => {
-        req.destroy();
-        resolve({ ok: false, error: "Request timed out after 20s" });
-      });
+      req.setTimeout(20000, () => { req.destroy(); resolve({ ok: false, error: "Request timed out after 20s" }); });
       req.write(body);
       req.end();
     });
   } catch (e) {
-    console.error("[CWP] verifyLicense exception:", e.message);
     return { ok: false, error: e.message };
   }
 });
